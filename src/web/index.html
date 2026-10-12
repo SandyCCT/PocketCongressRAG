@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PocketCongressRAG｜立法院發言問答</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="header">
+      <p class="eyebrow">PocketCongressRAG</p>
+      <h1>立法院發言問答</h1>
+      <p class="intro">選擇會期，輸入想查詢的問題。系統會從該會期的發言資料產生回答。</p>
+    </header>
+
+    <section class="card" aria-labelledby="question-heading">
+      <h2 id="question-heading">提出問題</h2>
+      <form id="question-form">
+        <label for="session">會期 <span class="required">必填</span></label>
+        <select id="session" name="session" required disabled>
+          <option value="">正在載入會期…</option>
+        </select>
+        <p id="session-status" class="hint" role="status"></p>
+
+        <div class="filters">
+          <div>
+            <label for="member-name">委員名字 <span class="optional">選填</span></label>
+            <input id="member-name" name="member-name" type="text" placeholder="例如：王育敏">
+          </div>
+          <div>
+            <label for="geographical-scope">涵蓋層級 <span class="optional">選填</span></label>
+            <select id="geographical-scope" name="geographical-scope">
+              <option value="all">不限</option>
+              <option value="全國性">全國性</option>
+              <option value="地區性">地區性</option>
+            </select>
+          </div>
+          <div>
+            <label for="committee">所屬委員會 <span class="optional">選填</span></label>
+            <input id="committee" name="committee" type="text" placeholder="例如：教育及文化委員會">
+          </div>
+        </div>
+
+        <label for="question">問題 <span class="required">必填</span></label>
+        <textarea id="question" name="question" rows="4" required placeholder="例如：王育敏委員對學童營養午餐有什麼看法？"></textarea>
+
+        <button id="submit-button" type="submit" disabled>送出問題</button>
+      </form>
+    </section>
+
+    <section class="card answer-card" aria-labelledby="answer-heading">
+      <h2 id="answer-heading">回答</h2>
+      <p id="answer-status" class="hint" role="status" aria-live="polite">送出問題後，答案會顯示在這裡。</p>
+      <div id="answer" class="answer" aria-live="polite"></div>
+      <button id="reset-button" type="button" hidden>重置</button>
+    </section>
+  </main>
+</body>
+</html>

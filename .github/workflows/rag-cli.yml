@@ -1,0 +1,83 @@
+name: RAG CLI Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_paid_openai_run:
+        description: Confirm this run may create OpenAI API usage
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rag-cli-demo
+  cancel-in-progress: false
+
+jobs:
+  run-demo:
+    if: ${{ inputs.confirm_paid_openai_run }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CHAT_PROVIDER: openai
+      EMBEDDING_PROVIDER: openai
+      OPENAI_CHAT_MODEL: gpt-4o-mini
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+      DATA_FOLDER_PATH: ../data/sessions
+      ROW_COUNT_HISTORY_PATH: ../instance/row_count_tracker.json
+      CHROMA_DIR: ../instance/chroma_db
+      DB_PATH: ../instance/legislature.db
+      INDEX_REBUILD_POLICY: auto
+      LOG_FILE_ENABLED: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        run: |
+          pipx install poetry==2.2.1
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Run offline checks
+        env:
+          OPENAI_API_KEY: test-key
+        run: |
+          poetry check
+          cd src
+          poetry run python -m unittest discover -s ../tests -q
+
+      - name: Run CLI with prefilled input
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          test -n "$OPENAI_API_KEY"
+          set -o pipefail
+
+          cd src
+          poetry run python run_workflow.py <<'EOF' | tee ../output.txt
+          3
+          王育敏
+          全國
+          教育及文化
+          2025年3月對學童營養午餐有什麼看法？
+          n
+          EOF
+
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-cli-output
+          path: output.txt
+          if-no-files-found: error
+          retention-days: 7

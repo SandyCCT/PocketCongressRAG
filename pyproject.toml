@@ -1,0 +1,31 @@
+[project]
+name = "pocket-congress-rag"
+version = "0.1.0"
+description = "A hybrid RAG system for Taiwan Legislative Yuan speech data with CLI, FastAPI, and web interfaces."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "langgraph==0.6.3",
+    "langchain==0.3.26",
+    "langchain-core==0.3.72",
+    "langchain-openai==0.3.28",
+    "langchain-google-vertexai==2.0.28",
+    "google-genai==2.8.0",
+    "langchain-chroma==0.2.5",
+    "pydantic==2.11.7",
+    "pandas==2.3.1",
+    "openpyxl==3.1.5",
+    "python-dotenv==1.1.1",
+    "fastapi>=0.115,<1.0",
+    "uvicorn>=0.30,<1.0",
+]
+
+[dependency-groups]
+dev = ["httpx>=0.27,<1.0"]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

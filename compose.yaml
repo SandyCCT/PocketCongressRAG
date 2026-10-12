@@ -1,0 +1,24 @@
+services:
+  app:
+    build:
+      context: .
+      target: local
+    image: pocket-congress-rag:local
+    env_file: .env
+    environment:
+      TZ: ${TZ:-Asia/Taipei}
+      DATA_FOLDER_PATH: /app/data/sessions
+      INSTANCE_DIR: ${INSTANCE_DIR:-}
+      ROW_COUNT_HISTORY_PATH: ${ROW_COUNT_HISTORY_PATH:-}
+      CHROMA_DIR: ${CHROMA_DIR:-}
+      DB_PATH: ${DB_PATH:-}
+      LOG_DIR: /app/instance/logs
+      LOG_FILE_ENABLED: ${LOG_FILE_ENABLED:-true}
+      INDEX_REBUILD_POLICY: ${INDEX_REBUILD_POLICY:-verify_only}
+      RUNTIME_METADATA_PATH: ""
+      DEPLOYMENT_MANIFEST_PATH: ""
+    ports:
+      - "127.0.0.1:${POCKETCONGRESS_PORT:-18000}:8000"
+    volumes:
+      - ./data/sessions:/app/data/sessions:ro
+      - ./instance:/app/instance

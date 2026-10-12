@@ -1,0 +1,113 @@
+steps:
+  - id: validate-vertex-bundle
+    name: python:3.12-slim
+    entrypoint: python
+    args:
+      - -c
+      - |
+        import hashlib
+        import json
+        from pathlib import Path
+
+        bundle_path = Path("${_DEPLOYMENT_BUNDLE_PATH}")
+        metadata_path = bundle_path / "runtime_metadata.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        expected = {
+            "metadata_schema_version": 2,
+            "embedding_provider": "vertexai",
+            "embedding_model": "gemini-embedding-001",
+        }
+        actual = {
+            key: metadata.get(key)
+            for key in expected
+        }
+        if actual != expected:
+            raise SystemExit(
+                "Vertex deployment bundle metadata 不相容："
+                f"expected={expected} actual={actual}"
+            )
+
+        manifest = json.loads(
+            (bundle_path / "manifest.json").read_text(encoding="utf-8")
+        )
+        expected_hashes = {
+            path: file_metadata["sha256"]
+            for path, file_metadata in manifest["files"].items()
+        }
+        actual_hashes = {}
+        for path in sorted(bundle_path.rglob("*")):
+            if not path.is_file() or path.name == "manifest.json":
+                continue
+            digest = hashlib.sha256()
+            with path.open("rb") as file:
+                for chunk in iter(lambda: file.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            actual_hashes[path.relative_to(bundle_path).as_posix()] = (
+                digest.hexdigest()
+            )
+        if actual_hashes != expected_hashes:
+            raise SystemExit("Vertex deployment bundle 與 manifest 不一致")
+
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --platform
+      - linux/amd64
+      - --target
+      - cloud
+      - --build-arg
+      - DEPLOYMENT_BUNDLE_PATH=${_DEPLOYMENT_BUNDLE_PATH}
+      - --tag
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+      - .
+
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+
+  - id: deploy-cloud-run
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+      - --region=${_REGION}
+      - --platform=managed
+      - --service-account=${_RUNTIME_SERVICE_ACCOUNT}@$PROJECT_ID.iam.gserviceaccount.com
+      - --remove-secrets=OPENAI_API_KEY
+      - --update-env-vars=CHAT_PROVIDER=vertexai,EMBEDDING_PROVIDER=vertexai,GOOGLE_CLOUD_PROJECT=$PROJECT_ID,GOOGLE_CLOUD_LOCATION=global,VERTEX_CHAT_MODEL=gemini-2.5-flash,VERTEX_EMBEDDING_MODEL=gemini-embedding-001
+      - --no-traffic
+      - --tag=${_VALIDATION_TAG}
+      - --port=8000
+      - --cpu=1
+      - --memory=${_MEMORY}
+      - --concurrency=1
+      - --min-instances=0
+      - --max-instances=1
+      - --timeout=300
+      - --startup-probe=httpGet.path=/health/ready,httpGet.port=8000,initialDelaySeconds=0,failureThreshold=30,timeoutSeconds=10,periodSeconds=10
+      - --readiness-probe=httpGet.path=/health/ready,httpGet.port=8000,successThreshold=1,failureThreshold=3,timeoutSeconds=10,periodSeconds=10
+      - --liveness-probe=httpGet.path=/health/live,httpGet.port=8000,initialDelaySeconds=30,failureThreshold=3,timeoutSeconds=5,periodSeconds=30
+      - --no-allow-unauthenticated
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE}:$BUILD_ID
+
+substitutions:
+  _REGION: asia-east1
+  _REPOSITORY: pocket-congress-rag
+  _SERVICE: pocket-congress-rag
+  _RUNTIME_SERVICE_ACCOUNT: pocket-congress-rag-runtime
+  _DEPLOYMENT_BUNDLE_PATH: deployment_bundles/2026-09-28-v6
+  _VALIDATION_TAG: candidate
+  _MEMORY: 2Gi
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1200s

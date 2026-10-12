@@ -1,0 +1,20 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+*.py[cod]
+instance/
+deployment_bundles/
+.trash/
+logs/
+*.log
+
+# Local cloud credentials and private keys
+application_default_credentials.json
+*service-account*.json
+*service_account*.json
+credentials*.json
+*.pem
+*.key
+*.p12
+*.pfx

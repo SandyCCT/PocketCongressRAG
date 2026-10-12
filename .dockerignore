@@ -1,0 +1,21 @@
+# Secrets and local Python environment
+**/.env
+**/.env.*
+!**/.env.example
+**/.venv/
+
+# Generated indexes and local files
+instance/
+logs/
+.trash/
+.git/
+**/.DS_Store
+
+# Python and test caches
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+.coverage
+htmlcov/

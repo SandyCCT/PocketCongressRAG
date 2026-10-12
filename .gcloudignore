@@ -1,0 +1,16 @@
+# Only upload files required by the Cloud Build Docker context.
+**
+!.gcloudignore
+!.dockerignore
+!cloudbuild.yaml
+!Dockerfile
+!pyproject.toml
+!poetry.lock
+!README.md
+!src/
+!src/**
+src/**/__pycache__/
+src/**/*.py[cod]
+!deployment_bundles/
+!deployment_bundles/2026-09-28-v6/
+!deployment_bundles/2026-09-28-v6/**

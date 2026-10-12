@@ -1,0 +1,6 @@
+services:
+  app:
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /var/run/secrets/google/application_default_credentials.json
+    volumes:
+      - ${GOOGLE_ADC_PATH:?請設定 GOOGLE_ADC_PATH}:/var/run/secrets/google/application_default_credentials.json:ro

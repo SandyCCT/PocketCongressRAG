@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENAI_API_KEY: test-key
+      OPENAI_CHAT_MODEL: gpt-4o-mini
+      OPENAI_EMBEDDING_MODEL: text-embedding-3-small
+      DATA_FOLDER_PATH: ../data/sessions
+      ROW_COUNT_HISTORY_PATH: ../instance/row_count_tracker.json
+      CHROMA_DIR: ../instance/chroma_db
+      DB_PATH: ../instance/legislature.db
+      LOG_FILE_ENABLED: "false"
+      INDEX_REBUILD_POLICY: auto
+      PYTHONDONTWRITEBYTECODE: "1"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        run: pipx install poetry==2.2.1
+
+      - name: Install dependencies
+        run: poetry install --no-interaction
+
+      - name: Check dependencies
+        run: poetry check
+
+      - name: Run offline tests
+        working-directory: src
+        run: poetry run python -m unittest discover -s ../tests -q
